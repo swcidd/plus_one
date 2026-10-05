@@ -1,21 +1,154 @@
-# plus_one
+<div align="center">
 
-A fitness tracker app built with Flutter.
+# +1 <sub>(Plus One)</sub>
 
-## Members
+**A fitness tracker that maps every rep, every set, every session.**
 
-- Sherwin Sid S. Sañol
+*Log the workout. See the progress. Beat yourself — by one.*
 
-## Getting Started
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-FFA000?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Desktop-FFA000?style=for-the-badge)](#download)
 
-This project is a starting point for a Flutter application.
+</div>
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Why +1?
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Tracking your lifts shouldn't feel like homework. Most apps either bury your numbers under five layers of menus or lock them behind a subscription. +1 does one thing and does it well: **it remembers what you lifted so you can see yourself getting stronger.**
+
+- ✍️ **Log in seconds** — exercises, sets, reps, and weight in a few taps.
+- 📈 **Watch the line go up** — every lift charted against your previous sessions.
+- 🏆 **Catch your PRs** — personal records surface automatically, no digging.
+- 📅 **Never lose your streak** — a calendar of everything you've done.
+- 🎯 **Know what's next** — each session suggests a target based on your own history.
+
+No account required. No ads. Your workout data stays on your device.
+
+---
+
+## Screens
+
+| Screen | What you get |
+| --- | --- |
+| **Home** | Today's plan, a quick-start button, and a snapshot of recent activity and streaks. |
+| **Workout Details** | The full log for a session — exercises, sets, reps, weight — with progress charts and PRs per lift. |
+| **Calendar** | Browse past sessions and schedule upcoming ones; tap a day to see what you did. |
+| **Profile** | Your stats, goals, and settings — total workouts, longest streak, achievements. |
+
+<!-- TODO: add screenshots here once the UI is final
+| Home | Details |
+| --- | --- |
+| ![Home](docs/screenshots/home.png) | ![Details](docs/screenshots/details.png) |
+-->
+
+---
+
+## Features
+
+- **Workout logging** — record exercises, sets, reps, and weight as you go
+- **Exercise library** — pick from common lifts or add your own
+- **Progress charts** — strength trends over weeks and months
+- **Personal records** — automatic PR detection and display
+- **Workout calendar** — history and scheduling in one view
+- **Streaks & stats** — consistency at a glance
+- **Goals & body metrics** — body weight, targets, and units
+- **Flexible data** — works offline, syncs with a public exercise REST API
+- **Empty, loading & error states** — the app tells you what's happening, always
+
+---
+
+## Tech stack
+
+| Layer | Choice |
+| --- | --- |
+| Framework | Flutter |
+| Language | Dart |
+| State management | `provider` (`ChangeNotifier`) |
+| Networking | `http` + JSON model classes |
+| Charts | `fl_chart` |
+| Storage | `shared_preferences` / `sqflite` |
+
+Architecture follows a clean separation: `models/` holds plain data classes, `services/` talks to the API, `providers/` owns app state, `screens/` renders pages, and `widgets/` holds reusable UI.
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.x
+- An Android emulator, iOS simulator, or Chrome for web
+
+### Run it
+
+```bash
+git clone https://github.com/swcidd/plus_one.git
+cd plus_one
+flutter pub get
+flutter run
+```
+
+### Build a release APK
+
+```bash
+flutter build apk --release
+# output: build/app/outputs/flutter-apk/app-release.apk
+```
+
+---
+
+## Project structure
+
+```
+lib/
+├── main.dart          # app entry, theme, routes, providers
+├── models/            # Workout, Exercise, Set, Profile
+├── services/          # API client, local storage
+├── providers/         # ChangeNotifiers for shared state
+├── screens/           # Home, WorkoutDetails, Calendar, Profile
+└── widgets/           # reusable cards, charts, inputs
+```
+
+---
+
+## Roadmap
+
+- [x] Project scaffold and setup
+- [ ] Workout logging with CRUD
+- [ ] Provider-based shared state
+- [ ] REST API integration
+- [ ] Progress charts and PR detection
+- [ ] Custom icon, splash screen, release build
+- [ ] Documentation paper
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Please use feature branches (`feature/<name>`) and open a PR against `master` rather than pushing directly.
+
+```bash
+git checkout -b feature/my-feature
+# ...make changes...
+git commit -m "Add clear description of what changed"
+git push origin feature/my-feature
+```
+
+---
+
+## Team
+
+| Member | Role |
+| --- | --- |
+| **Sherwin Sid S. Sañol** ([@swcidd](https://github.com/swcidd)) | UI, state management, API/data layer, Git, documentation |
+
+Built for **SE2142 — Software Engineering Tools and Practices**.
+
+---
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
