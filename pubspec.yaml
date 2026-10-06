@@ -38,6 +38,7 @@ dependencies:
   intl: ^0.20.3
   fl_chart: ^1.2.0
   google_fonts: ^9.0.0
+  equatable: ^2.1.0
 
 dev_dependencies:
   flutter_test:
