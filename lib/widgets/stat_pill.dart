@@ -43,8 +43,10 @@ class StatPill extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (label != null)
-          Text(' ${label!.toUpperCase()}', style: context.text.labelCaps),
+        if (label != null) ...[
+          const SizedBox(width: 4),
+          Text(label!.toUpperCase(), style: context.text.labelCaps),
+        ],
       ],
     );
 

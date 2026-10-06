@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/workout_provider.dart';
+import 'screens/workout_details_screen.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_typography.dart';
@@ -23,6 +24,9 @@ class PlusOneApp extends StatelessWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,
+        routes: {
+          WorkoutDetailsScreen.routeName: (_) => const WorkoutDetailsScreen(),
+        },
         home: const _ThemePreview(),
       ),
     );
