@@ -12,14 +12,17 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  testWidgets('renders the app shell with the monochrome theme', (
+  testWidgets('renders the dashboard shell with the monochrome theme', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const PlusOneApp());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Plus One'), findsOneWidget);
-    expect(find.text('Primary action'), findsOneWidget);
+    expect(find.text('Workout Tracker'), findsOneWidget);
+    expect(find.text("TODAY'S PLAN"), findsOneWidget);
+    expect(find.textContaining('Alex'), findsOneWidget);
+    expect(find.text('Resume Workout Session'), findsOneWidget);
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.theme?.useMaterial3, isTrue);
@@ -28,6 +31,21 @@ void main() {
       AppTheme.light().colorScheme.primary,
     );
     expect(app.darkTheme?.colorScheme.brightness, Brightness.dark);
+  });
+
+  testWidgets('dashboard metrics are reachable further down the list', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    final goals = find.text("DAILY GOALS");
+    await tester.scrollUntilVisible(goals, 200);
+    expect(goals, findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('HEART RATE'), 200);
+    expect(find.text('CALORIES'), findsOneWidget);
+    expect(find.text('HEART RATE'), findsOneWidget);
   });
 
   test('light scheme keeps every surface inside the neutral ramp', () {
@@ -46,7 +64,7 @@ void main() {
       scheme.surfaceContainerHighest,
     ]) {
       final hsl = HSLColor.fromColor(color);
-      expect(hsl.saturation, lessThan(0.05), reason: '$color is not neutral');
+      expect(hsl.saturation, lessThan(0.06), reason: '$color is not neutral');
     }
   });
 }

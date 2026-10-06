@@ -35,7 +35,7 @@ class SectionHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (actionLabel != null)
+          if (actionLabel != null && onAction != null)
             TextButton(
               onPressed: onAction,
               style: TextButton.styleFrom(
