@@ -44,13 +44,11 @@ abstract final class AppTheme {
       colorScheme: scheme,
       textTheme: AppTypography.textTheme(scheme),
       scaffoldBackgroundColor: isLight
-          ? AppColors.lightBackground
-          : AppColors.darkBackground,
+          ? AppColors.mintCream
+          : AppColors.prussianBlue,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
-        backgroundColor: isLight
-            ? AppColors.lightBackground
-            : AppColors.darkBackground,
+        backgroundColor: isLight ? AppColors.mintCream : AppColors.prussianBlue,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -82,7 +80,10 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.onSurface,
-          side: BorderSide(color: scheme.outlineVariant),
+          // outline, not outlineVariant: a button edge has to be findable at
+          // a glance, while card borders stay faint because the fill already
+          // separates them.
+          side: BorderSide(color: scheme.outline),
           minimumSize: const Size(44, 44),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -167,37 +168,40 @@ abstract final class AppTheme {
     );
   }
 
-  /// Exact palette from the wireframes, expressed as a Material color scheme.
+  /// Deep Blue Sea, light: Mint Cream canvas, Regal Navy actions, Prussian
+  /// Blue text. Surface containers tint the canvas up toward white so cards
+  /// lift off the page without needing a shadow to say so.
   static const ColorScheme _lightScheme = ColorScheme(
     brightness: Brightness.light,
-    primary: AppColors.primary,
-    onPrimary: AppColors.onPrimary,
-    primaryContainer: AppColors.primaryContainer,
-    // The wireframe value (#858386) lands under 4.5:1 on the container, so
-    // the lighter inverse surface is used instead to clear WCAG AA.
-    onPrimaryContainer: AppColors.lightInverseOnSurface,
-    secondary: AppColors.secondary,
-    onSecondary: AppColors.onSecondary,
+    primary: AppColors.regalNavy,
+    onPrimary: AppColors.mintCream,
+    primaryContainer: AppColors.oxfordNavy,
+    onPrimaryContainer: AppColors.mintCream,
+    secondary: AppColors.powderBlue,
+    onSecondary: AppColors.prussianBlue,
     secondaryContainer: AppColors.lightSurfaceHigh,
-    onSecondaryContainer: AppColors.lightOnSurface,
-    tertiary: AppColors.primary,
-    onTertiary: AppColors.onPrimary,
+    onSecondaryContainer: AppColors.prussianBlue,
+    // Tertiary wants a contrasting hue, but the palette is one hue deep, so
+    // it leans on the darker navy instead of inventing an out-of-family
+    // accent that the brand book would not recognise.
+    tertiary: AppColors.oxfordNavy,
+    onTertiary: AppColors.mintCream,
     tertiaryContainer: AppColors.lightSurfaceHighest,
-    onTertiaryContainer: AppColors.lightOnSurface,
+    onTertiaryContainer: AppColors.prussianBlue,
     error: AppColors.error,
-    onError: AppColors.onPrimary,
+    onError: AppColors.mintCream,
     errorContainer: AppColors.errorContainer,
     onErrorContainer: AppColors.onErrorContainer,
-    surface: AppColors.lightBackground,
-    onSurface: AppColors.lightOnSurface,
+    surface: AppColors.mintCream,
+    onSurface: AppColors.prussianBlue,
     onSurfaceVariant: AppColors.lightOnSurfaceVariant,
     outline: AppColors.lightOutline,
     outlineVariant: AppColors.lightOutlineVariant,
     shadow: Color(0xFF000000),
     scrim: Color(0xFF000000),
-    inverseSurface: AppColors.lightInverseSurface,
-    onInverseSurface: AppColors.lightInverseOnSurface,
-    inversePrimary: Color(0xFFC8C6C8),
+    inverseSurface: AppColors.prussianBlue,
+    onInverseSurface: AppColors.mintCream,
+    inversePrimary: AppColors.powderBlue,
     surfaceContainerLowest: AppColors.lightSurfaceLowest,
     surfaceContainerLow: AppColors.lightSurfaceLow,
     surfaceContainer: AppColors.lightSurface,
@@ -205,36 +209,39 @@ abstract final class AppTheme {
     surfaceContainerHighest: AppColors.lightSurfaceHighest,
   );
 
-  /// Monochrome dark scale: the light scale mirrored, so contrast ratios
-  /// between text and surface stay identical across both modes.
+  /// Deep Blue Sea, dark: Prussian Blue page, Mint Cream text, Powder Blue
+  /// for anything secondary. The ramp tints upward from the page and lands
+  /// on Regal Navy, so raised surfaces still read as the brand rather than
+  /// as lifted grey. `primary` inverts the way Material expects, keeping
+  /// filled controls high-contrast in both modes.
   static const ColorScheme _darkScheme = ColorScheme(
     brightness: Brightness.dark,
-    primary: AppColors.darkInverseSurface,
-    onPrimary: AppColors.darkBackground,
-    primaryContainer: AppColors.darkOnSurface,
-    onPrimaryContainer: AppColors.darkBackground,
-    secondary: AppColors.darkOutline,
-    onSecondary: AppColors.darkBackground,
-    secondaryContainer: AppColors.darkOutlineVariant,
-    onSecondaryContainer: AppColors.darkOnSurface,
-    tertiary: AppColors.darkInverseSurface,
-    onTertiary: AppColors.darkBackground,
-    tertiaryContainer: AppColors.darkSurfaceHigh,
-    onTertiaryContainer: AppColors.darkOnSurface,
+    primary: AppColors.mintCream,
+    onPrimary: AppColors.prussianBlue,
+    primaryContainer: AppColors.darkContainer,
+    onPrimaryContainer: AppColors.mintCream,
+    secondary: AppColors.powderBlue,
+    onSecondary: AppColors.prussianBlue,
+    secondaryContainer: AppColors.darkSurfaceHigh,
+    onSecondaryContainer: AppColors.mintCream,
+    tertiary: AppColors.powderBlue,
+    onTertiary: AppColors.prussianBlue,
+    tertiaryContainer: AppColors.darkSurfaceHighest,
+    onTertiaryContainer: AppColors.mintCream,
     error: Color(0xFFFFB4AB),
     onError: Color(0xFF690005),
     errorContainer: AppColors.onErrorContainer,
     onErrorContainer: AppColors.errorContainer,
-    surface: AppColors.darkBackground,
-    onSurface: AppColors.darkOnSurface,
+    surface: AppColors.prussianBlue,
+    onSurface: AppColors.mintCream,
     onSurfaceVariant: AppColors.darkOnSurfaceVariant,
     outline: AppColors.darkOutline,
     outlineVariant: AppColors.darkOutlineVariant,
     shadow: Color(0xFF000000),
     scrim: Color(0xFF000000),
-    inverseSurface: AppColors.darkInverseOnSurface,
-    onInverseSurface: AppColors.darkInverseSurface,
-    inversePrimary: Color(0xFF5F5E60),
+    inverseSurface: AppColors.darkInverseSurface,
+    onInverseSurface: AppColors.darkInverseOnSurface,
+    inversePrimary: AppColors.regalNavy,
     surfaceContainerLowest: AppColors.darkSurfaceLowest,
     surfaceContainerLow: AppColors.darkSurfaceLow,
     surfaceContainer: AppColors.darkSurface,

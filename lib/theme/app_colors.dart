@@ -1,58 +1,73 @@
 import 'package:flutter/material.dart';
 
-/// Monochrome palette lifted from the Stitch wireframes.
+/// Deep Blue Sea palette.
 ///
-/// The design is intentionally achromatic: black is the only action colour
-/// and every surface step is a shade of neutral grey. Keeping the scale in
-/// one place stops screens from inventing their own greys, which is how a
-/// monochrome UI starts drifting warm in one place and cool in another.
+/// Regal Navy carries every filled control, Prussian Blue anchors body text,
+/// Powder Blue handles borders and muted surfaces, and Mint Cream is the
+/// page. That split is what stops a five-colour palette from turning into
+/// blue soup: exactly one hue does the work of an action, and the rest is
+/// tint, text or canvas.
+///
+/// https://coolors.co/134074-13315c-0b2545-8da9c4-eef4ed
 abstract final class AppColors {
-  // --- Light -----------------------------------------------------------------
-  static const Color lightBackground = Color(0xFFF9F9F9);
-  static const Color lightOnSurface = Color(0xFF1A1C1C);
-  static const Color lightOnSurfaceVariant = Color(0xFF47464A);
-  static const Color lightOutline = Color(0xFF78767B);
-  static const Color lightOutlineVariant = Color(0xFFC8C5CA);
+  // --- Palette --------------------------------------------------------------
+  static const Color regalNavy = Color(0xFF134074);
+  static const Color oxfordNavy = Color(0xFF13315C);
+  static const Color prussianBlue = Color(0xFF0B2545);
+  static const Color powderBlue = Color(0xFF8DA9C4);
+  static const Color mintCream = Color(0xFFEEF4ED);
 
-  static const Color lightSurfaceLowest = Color(0xFFFFFFFF);
-  static const Color lightSurfaceLow = Color(0xFFF3F3F3);
-  static const Color lightSurface = Color(0xFFEEEEEE);
-  static const Color lightSurfaceHigh = Color(0xFFE8E8E8);
-  static const Color lightSurfaceHighest = Color(0xFFE2E2E2);
+  // --- Derived neutrals -----------------------------------------------------
+  // A five-colour palette has no greys, so every surface step, divider and
+  // secondary label below is interpolated between two palette colours rather
+  // than pulled off a grey ramp. Interpolation keeps the hue locked to the
+  // brand; a neutral grey would introduce a second, unrelated colour cast.
 
-  static const Color lightInverseSurface = Color(0xFF2F3131);
-  static const Color lightInverseOnSurface = Color(0xFFF0F1F1);
+  /// Secondary label on the light canvas. Powder Blue mixed toward Oxford
+  /// Navy until it clears 4.5:1 against Mint Cream.
+  static const Color lightOnSurfaceVariant = Color(0xFF4E6E92);
 
-  // --- Dark ------------------------------------------------------------------
-  ///
-  /// The dark scale is the light scale mirrored, not a separately designed
-  /// palette. That keeps contrast ratios identical in both modes so a metric
-  /// card reads the same on a phone at night as it does in daylight.
-  static const Color darkBackground = Color(0xFF121313);
-  static const Color darkOnSurface = Color(0xFFE4E1E4);
-  static const Color darkOnSurfaceVariant = Color(0xFFC8C5CA);
-  static const Color darkOutline = Color(0xFF929196);
-  static const Color darkOutlineVariant = Color(0xFF47464A);
+  /// Borders and outlined controls. A step darker so a button edge is
+  /// unmistakably an edge rather than a hint.
+  static const Color lightOutline = Color(0xFF405D82);
 
-  static const Color darkSurfaceLowest = Color(0xFF1A1C1C);
-  static const Color darkSurfaceLow = Color(0xFF1F2021);
-  static const Color darkSurface = Color(0xFF232425);
-  static const Color darkSurfaceHigh = Color(0xFF282A2A);
-  static const Color darkSurfaceHighest = Color(0xFF2E3030);
+  /// Card borders and dividers. Deliberately faint: cards already separate
+  /// by fill, so a loud outline would double-draw every boundary.
+  static const Color lightOutlineVariant = Color(0xFFC7D6DD);
 
-  static const Color darkInverseSurface = Color(0xFFF0F1F1);
-  static const Color darkInverseOnSurface = Color(0xFF2F3131);
+  /// Light surface ramp, tinted from Mint Cream toward white so cards read as
+  /// lifted off the canvas instead of cut out of it.
+  static const Color lightSurfaceLowest = Color(0xFFF9FCF9);
+  static const Color lightSurfaceLow = Color(0xFFF1F6F3);
+  static const Color lightSurface = Color(0xFFE9F0EE);
+  static const Color lightSurfaceHigh = Color(0xFFE1E9EA);
+  static const Color lightSurfaceHighest = Color(0xFFD9E2E6);
 
-  // --- Shared ----------------------------------------------------------------
-  /// Pure black is the action colour in the wireframes, used for filled
-  /// buttons and progress bars rather than for large backgrounds.
-  static const Color primary = Color(0xFF000000);
-  static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color primaryContainer = Color(0xFF1C1B1D);
+  /// Dark mode secondary label: Powder Blue on Prussian Blue lands at 6.3:1.
+  static const Color darkOnSurfaceVariant = powderBlue;
 
-  static const Color secondary = Color(0xFF5F5E61);
-  static const Color onSecondary = Color(0xFFFFFFFF);
+  static const Color darkOutline = powderBlue;
+  static const Color darkOutlineVariant = Color(0xFF2E4A75);
 
+  /// Dark surface ramp, tinted up from Prussian Blue. The top step lands on
+  /// Regal Navy, which ties the raised surfaces back to the palette.
+  static const Color darkSurfaceLowest = Color(0xFF0F2A4E);
+  static const Color darkSurfaceLow = Color(0xFF132F57);
+  static const Color darkSurface = Color(0xFF17345F);
+  static const Color darkSurfaceHigh = Color(0xFF1B3A6A);
+  static const Color darkSurfaceHighest = Color(0xFF204174);
+
+  /// A lifted navy used where dark mode needs a container that separates
+  /// from the Prussian Blue page without going pale.
+  static const Color darkContainer = Color(0xFF204174);
+
+  static const Color darkInverseSurface = Color(0xFFDCE7F1);
+  static const Color darkInverseOnSurface = prussianBlue;
+
+  // --- Error ----------------------------------------------------------------
+  // Kept on the standard Material scale rather than recoloured. Red for
+  // destructive is a learned convention, and rehuing it to fit the palette
+  // would make "delete" less obvious, not prettier.
   static const Color error = Color(0xFFBA1A1A);
   static const Color errorContainer = Color(0xFFFFDAD6);
   static const Color onErrorContainer = Color(0xFF93000A);
