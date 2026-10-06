@@ -1,30 +1,52 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:plus_one/main.dart';
+import 'package:plus_one/theme/app_theme.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() {
+    // Tests run offline; letting google_fonts hit the network makes them
+    // flaky and slow. The platform font is enough to assert layout.
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('renders the app shell with the monochrome theme', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Plus One'), findsOneWidget);
+    expect(find.text('Primary action'), findsOneWidget);
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme?.useMaterial3, isTrue);
+    expect(
+      app.theme?.colorScheme.primary,
+      AppTheme.light().colorScheme.primary,
+    );
+    expect(app.darkTheme?.colorScheme.brightness, Brightness.dark);
+  });
+
+  test('light scheme keeps every surface inside the neutral ramp', () {
+    final scheme = AppTheme.colorScheme(Brightness.light);
+
+    expect(scheme.brightness, Brightness.light);
+    expect(scheme.primary, const Color(0xFF000000));
+    expect(scheme.surface, const Color(0xFFF9F9F9));
+
+    // A monochrome palette only stays monochrome if the hue is locked, so
+    // assert the neutrals carry no colour cast.
+    for (final color in [
+      scheme.surface,
+      scheme.onSurface,
+      scheme.outlineVariant,
+      scheme.surfaceContainerHighest,
+    ]) {
+      final hsl = HSLColor.fromColor(color);
+      expect(hsl.saturation, lessThan(0.05), reason: '$color is not neutral');
+    }
   });
 }
