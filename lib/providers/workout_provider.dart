@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/exercise.dart';
 import '../models/metric.dart';
 import '../models/profile_stats.dart';
 import '../models/workout.dart';
@@ -187,11 +188,126 @@ class WorkoutProvider extends ChangeNotifier {
     updateWorkout(updated);
   }
 
+  /// Appends a set to one exercise so the user can add volume mid-session
+  /// without the screen having to rebuild the whole workout itself.
+  bool addSet(
+    String workoutId,
+    int logIndex, {
+    int reps = 8,
+    double weightKg = 0,
+  }) {
+    return _mapLogs(workoutId, (logs) {
+      if (logIndex < 0 || logIndex >= logs.length) return null;
+      final updated = List.of(logs);
+      updated[logIndex] = updated[logIndex].copyWith(
+        sets: [
+          ...updated[logIndex].sets,
+          WorkoutSet(reps: reps, weightKg: weightKg),
+        ],
+      );
+      return updated;
+    });
+  }
+
+  /// Removes a set. Refuses to empty an exercise entirely, because an
+  /// exercise with no sets cannot report progress and would silently drop
+  /// out of the volume total.
+  bool removeSet(String workoutId, int logIndex, int setIndex) {
+    return _mapLogs(workoutId, (logs) {
+      if (logIndex < 0 || logIndex >= logs.length) return null;
+      final current = logs[logIndex];
+      if (current.sets.length <= 1) return null;
+      if (setIndex < 0 || setIndex >= current.sets.length) return null;
+
+      final sets = List.of(current.sets)..removeAt(setIndex);
+      final updated = List.of(logs);
+      updated[logIndex] = current.copyWith(sets: sets);
+      return updated;
+    });
+  }
+
+  bool addExercise(String workoutId, ExerciseLog log) {
+    return _mapLogs(workoutId, (logs) => [...logs, log]);
+  }
+
+  bool removeExercise(String workoutId, int logIndex) {
+    return _mapLogs(workoutId, (logs) {
+      if (logIndex < 0 || logIndex >= logs.length) return null;
+      if (logs.length <= 1) return null;
+      return [...logs]..removeAt(logIndex);
+    });
+  }
+
+  /// Closes a session in one action, the way a user actually finishes one.
+  void completeWorkout(String id) {
+    final workout = byId(id);
+    if (workout == null) return;
+    updateWorkout(
+      workout.copyWith(
+        logs: [
+          for (final log in workout.logs)
+            log.copyWith(
+              sets: [for (final set in log.sets) set.copyWith(completed: true)],
+            ),
+        ],
+        status: WorkoutStatus.completed,
+      ),
+    );
+  }
+
+  /// Reopens a session for another round.
+  ///
+  /// Sets are cleared rather than left ticked, so the reopened workout
+  /// cannot report 100% complete the moment it exists again.
+  void reopenWorkout(String id) {
+    final workout = byId(id);
+    if (workout == null) return;
+    updateWorkout(
+      workout.copyWith(
+        logs: [
+          for (final log in workout.logs)
+            log.copyWith(
+              sets: [
+                for (final set in log.sets) set.copyWith(completed: false),
+              ],
+            ),
+        ],
+        status: WorkoutStatus.planned,
+      ),
+    );
+  }
+
   void updateMetric(String id, double value) {
     final index = _metrics.indexWhere((m) => m.id == id);
     if (index == -1) return;
     _metrics[index] = _metrics[index].copyWith(value: value);
     notifyListeners();
+  }
+
+  /// Edits the daily goal behind a metric. Separate from the reading
+  /// because a target is a preference the user sets, while the value is
+  /// something the day produced.
+  bool updateMetricTarget(String id, double target) {
+    final index = _metrics.indexWhere((m) => m.id == id);
+    if (index == -1) return false;
+    _metrics[index] = _metrics[index].copyWith(target: target);
+    notifyListeners();
+    return true;
+  }
+
+  /// Shared plumbing for every mutation that rewrites a workout's logs.
+  ///
+  /// Returns null from [transform] to signal "leave it alone"; that becomes
+  /// a false here so callers can tell a rejected edit from a saved one.
+  bool _mapLogs(
+    String workoutId,
+    List<ExerciseLog>? Function(List<ExerciseLog> logs) transform,
+  ) {
+    final workout = byId(workoutId);
+    if (workout == null) return false;
+    final logs = transform(workout.logs);
+    if (logs == null) return false;
+    return updateWorkout(workout.copyWith(logs: logs));
   }
 
   void updateProfile(ProfileStats profile) {
