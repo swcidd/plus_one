@@ -155,6 +155,34 @@ void main() {
       expect(hydration.displayValue, '2.1');
       expect(hydration.displayAbsolute, '2.1/3 L');
     });
+
+    test('abbreviates totals from five digits up', () {
+      const lifetime = Metric(
+        id: 'energy',
+        label: 'Total Energy',
+        value: 94500,
+        unit: 'kcal',
+      );
+      expect(lifetime.displayValue, '94.5K');
+
+      const round = Metric(
+        id: 'steps',
+        label: 'Steps',
+        value: 10000,
+        unit: 'steps',
+      );
+      expect(round.displayValue, '10K');
+
+      const daily = Metric(
+        id: 'steps',
+        label: 'Steps',
+        value: 8420,
+        unit: 'steps',
+        target: 10000,
+      );
+      expect(daily.displayValue, '8420');
+      expect(daily.displayAbsolute, '8420/10K steps');
+    });
   });
 
   group('ProfileStats', () {

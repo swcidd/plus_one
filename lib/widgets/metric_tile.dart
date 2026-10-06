@@ -6,9 +6,12 @@ import 'progress_bar.dart';
 
 /// One tracked figure rendered as a card.
 ///
+/// The unit sits on its own line under the number rather than beside it.
+/// Sideways, "74.5" plus " KG" clips as soon as a grid drops below roughly
+/// 100dp, which is exactly what the four-across biometric row does.
+///
 /// `compact` swaps the 36pt metric face for the 20pt one so the same widget
-/// can sit in a three-across row on the dashboard and a two-across row
-/// underneath without the number colliding with its unit.
+/// works in a two-across dashboard row and a four-across telemetry strip.
 class MetricTile extends StatelessWidget {
   const MetricTile({super.key, required this.metric, this.compact = false});
 
@@ -39,28 +42,18 @@ class MetricTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(
-                child: Text(
-                  metric.displayValue,
-                  style: numberStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.clip,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                metric.displaySuffix,
-                style: textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          Text(
+            metric.displayValue,
+            style: numberStyle,
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            metric.hasTarget ? metric.displayRange.toUpperCase() : metric.unit,
+            style: textTheme.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (metric.hasTarget) ...[
             const SizedBox(height: 10),

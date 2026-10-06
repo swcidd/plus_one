@@ -48,8 +48,9 @@ class Metric extends Equatable {
     );
   }
 
-  /// "640" / "2.1" / "92" - trailing zeros trimmed so the tile never shows
-  /// "640.0".
+  /// "640" / "2.1" / "94.5K" / "92" - trailing zeros trimmed so the tile
+  /// never shows "640.0", and totals from five digits up abbreviated so a
+  /// lifetime figure does not push its label off a four-across cell.
   String get displayValue => _trim(value);
 
   /// "/800 kcal" for bounded metrics, just the unit otherwise. The tile sets
@@ -72,6 +73,13 @@ class Metric extends Equatable {
   }
 
   static String _trim(double number) {
+    if (number >= 10000) {
+      final scaled = number / 1000;
+      final text = scaled == scaled.roundToDouble()
+          ? scaled.toStringAsFixed(0)
+          : scaled.toStringAsFixed(1);
+      return '${text.replaceFirst(RegExp(r'\.0$'), '')}K';
+    }
     if (number == number.roundToDouble()) return number.toStringAsFixed(0);
     return number
         .toStringAsFixed(2)
