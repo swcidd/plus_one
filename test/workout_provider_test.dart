@@ -1,0 +1,263 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:plus_one/models/metric.dart';
+import 'package:plus_one/models/workout.dart';
+import 'package:plus_one/providers/workout_provider.dart';
+
+void main() {
+  // Fixed date keeps streak and consistency assertions stable regardless of
+  // when the suite runs.
+  final today = DateTime(2026, 10, 6);
+
+  WorkoutProvider build() => WorkoutProvider(today: today);
+
+  WorkoutProvider buildWithPlan() {
+    final provider = build();
+    final plan = provider.focusWorkout!;
+    final logs = List.of(plan.logs);
+    for (var i = 0; i < logs.length; i++) {
+      final log = logs[i];
+      logs[i] = log.copyWith(
+        sets: log.sets.map((s) => s.copyWith(completed: true)).toList(),
+      );
+    }
+    provider.updateWorkout(
+      plan.copyWith(logs: logs, status: WorkoutStatus.completed),
+    );
+    return provider;
+  }
+
+  group('reads', () {
+    test('seeds a resumable plan for today', () {
+      final provider = build();
+
+      final plan = provider.focusWorkout;
+      expect(plan, isNotNull);
+      expect(plan!.date, today);
+      expect(plan.status, WorkoutStatus.planned);
+      expect(plan.totalSets, 8);
+      expect(plan.completedSets, 3);
+      expect(plan.setsRemaining, 5);
+    });
+
+    test('focus falls forward once today is finished', () {
+      final provider = buildWithPlan();
+
+      final focus = provider.focusWorkout;
+      expect(focus, isNotNull);
+      expect(focus!.date.isAfter(today), isTrue);
+    });
+
+    test('workoutsOn only returns that day sessions', () {
+      final provider = build();
+
+      expect(provider.workoutsOn(today), hasLength(1));
+      expect(
+        provider.workoutsOn(today.add(const Duration(days: 100))),
+        isEmpty,
+      );
+    });
+
+    test('byId returns null for an unknown session', () {
+      expect(build().byId('nope'), isNull);
+    });
+  });
+
+  group('streak and consistency', () {
+    test('streak continues through yesterday when today is still open', () {
+      // Seeded completed days are 1, 2 and 3 days back, then a rest day.
+      expect(build().streakDays, 3);
+    });
+
+    test('completing today extends the streak instead of restarting it', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+
+      // Completing today extends the run rather than restarting it.
+      final logs = plan.logs
+          .map(
+            (l) => l.copyWith(
+              sets: l.sets.map((s) => s.copyWith(completed: true)).toList(),
+            ),
+          )
+          .toList();
+      provider.updateWorkout(
+        plan.copyWith(logs: logs, status: WorkoutStatus.completed),
+      );
+
+      expect(provider.streakDays, 4);
+    });
+
+    test('consistency counts finished sessions against scheduled ones', () {
+      final provider = build();
+
+      // Seed for October 2026: four finished sessions earlier this month,
+      // today still open and three sessions scheduled ahead.
+      expect(provider.completedThisMonth, 4);
+      expect(provider.workoutsThisMonth, 8);
+      expect(provider.consistencyPercent, 50);
+      expect(provider.consistency, closeTo(0.5, 0.0001));
+    });
+
+    test('consistency is zero rather than NaN for an empty month', () {
+      final provider = WorkoutProvider(today: today, workouts: const []);
+
+      expect(provider.consistency, 0);
+      expect(provider.consistencyPercent, 0);
+      expect(provider.streakDays, 0);
+    });
+  });
+
+  group('mutations', () {
+    test('toggleSet flips a single set and notifies once', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.toggleSet(plan.id, 0, 2);
+
+      final updated = provider.byId(plan.id)!;
+      expect(updated.logs[0].sets[2].completed, isTrue);
+      expect(updated.completedSets, 4);
+      expect(notifications, 1);
+    });
+
+    test('finishing the last set closes the workout', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+
+      for (var l = 0; l < plan.logs.length; l++) {
+        final sets = plan.logs[l].sets;
+        for (var s = 0; s < sets.length; s++) {
+          if (!sets[s].completed) provider.toggleSet(plan.id, l, s);
+        }
+      }
+
+      final done = provider.byId(plan.id)!;
+      expect(done.isDone, isTrue);
+      expect(done.status, WorkoutStatus.completed);
+      expect(done.progress, 1.0);
+    });
+
+    test('unchecking the last set reopens the workout', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+
+      for (var l = 0; l < plan.logs.length; l++) {
+        final sets = plan.logs[l].sets;
+        for (var s = 0; s < sets.length; s++) {
+          if (!sets[s].completed) provider.toggleSet(plan.id, l, s);
+        }
+      }
+
+      final done = provider.byId(plan.id)!;
+      final lastLog = done.logs.last;
+      provider.toggleSet(
+        done.id,
+        done.logs.length - 1,
+        lastLog.sets.length - 1,
+      );
+
+      final reopened = provider.byId(plan.id)!;
+      expect(reopened.status, WorkoutStatus.planned);
+      expect(reopened.isDone, isFalse);
+    });
+
+    test('ignores out-of-range log and set indices', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.toggleSet(plan.id, 99, 0);
+      provider.toggleSet(plan.id, 0, 99);
+      provider.toggleSet('missing', 0, 0);
+
+      expect(notifications, 0);
+      expect(provider.byId(plan.id), plan);
+    });
+
+    test('addWorkout assigns an id when none is given', () {
+      final provider = build();
+      final before = provider.workouts.length;
+
+      provider.addWorkout(
+        Workout(
+          id: '',
+          title: 'New Session',
+          date: today,
+          status: WorkoutStatus.planned,
+          durationMin: 30,
+          estimatedKcal: 200,
+          targetMuscleGroups: const ['Core'],
+          equipment: const [],
+          logs: const [],
+        ),
+      );
+
+      expect(provider.workouts, hasLength(before + 1));
+      expect(
+        provider.workouts.firstWhere((w) => w.title == 'New Session').id,
+        isNotEmpty,
+      );
+    });
+
+    test('updateWorkout reports when the id does not exist', () {
+      final provider = build();
+
+      final stale = provider.focusWorkout!.copyWith(id: 'ghost');
+      expect(provider.updateWorkout(stale), isFalse);
+      expect(provider.byId('ghost'), isNull);
+    });
+
+    test('deleteWorkout removes only the matching session', () {
+      final provider = build();
+      final plan = provider.focusWorkout!;
+      final before = provider.workouts.length;
+
+      expect(provider.deleteWorkout(plan.id), isTrue);
+      expect(provider.workouts, hasLength(before - 1));
+      expect(provider.byId(plan.id), isNull);
+
+      expect(provider.deleteWorkout(plan.id), isFalse);
+      expect(provider.workouts, hasLength(before - 1));
+    });
+
+    test('updateMetric replaces the reading in place', () {
+      final provider = build();
+      var notifications = 0;
+      provider.addListener(() => notifications++);
+
+      provider.updateMetric('hydration', 2.5);
+      expect(provider.metricById('hydration')!.value, 2.5);
+
+      provider.updateMetric('does-not-exist', 1);
+      expect(notifications, 1);
+    });
+
+    test('updateProfile swaps the stats the profile screen renders', () {
+      final provider = build();
+
+      provider.updateProfile(provider.profile.copyWith(name: 'Sam Reyes'));
+
+      expect(provider.profile.name, 'Sam Reyes');
+      expect(provider.profile.records, isNotEmpty);
+    });
+  });
+
+  group('metric helper', () {
+    test('copyWith leaves the target alone', () {
+      const metric = Metric(
+        id: 'steps',
+        label: 'Steps',
+        value: 100,
+        unit: 'steps',
+        target: 10000,
+      );
+
+      expect(metric.copyWith(value: 250).target, 10000);
+      expect(metric.copyWith(value: 250).label, 'Steps');
+    });
+  });
+}

@@ -32,6 +32,22 @@ class Metric extends Equatable {
 
   bool get hasTarget => target != null;
 
+  Metric copyWith({
+    String? id,
+    String? label,
+    double? value,
+    String? unit,
+    double? target,
+  }) {
+    return Metric(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      value: value ?? this.value,
+      unit: unit ?? this.unit,
+      target: target ?? this.target,
+    );
+  }
+
   /// "640" / "2.1" / "92" - trailing zeros trimmed so the tile never shows
   /// "640.0".
   String get displayValue => _trim(value);
