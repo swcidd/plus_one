@@ -52,6 +52,11 @@ class Metric extends Equatable {
   /// "640.0".
   String get displayValue => _trim(value);
 
+  /// "/800 kcal" for bounded metrics, just the unit otherwise. The tile sets
+  /// [displayValue] large and this small, so the fraction reads as one
+  /// number rather than two competing ones.
+  String get displaySuffix => hasTarget ? '/${_trim(target!)} $unit' : unit;
+
   /// "of 800 kcal" for bounded metrics, "bpm" style suffix otherwise.
   String get displayRange {
     final upperBound = target;
