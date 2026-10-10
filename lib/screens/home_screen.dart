@@ -12,7 +12,6 @@ import '../widgets/progress_bar.dart';
 import '../widgets/section_header.dart';
 import '../widgets/stat_tile.dart';
 import '../widgets/workout_card.dart';
-import 'navigation_shell.dart';
 import 'workout_details_screen.dart';
 
 /// The dashboard: what to train now, how the week is going, and what was
@@ -27,9 +26,7 @@ import 'workout_details_screen.dart';
 /// ticking a set on the detail screen moves this screen the moment the user
 /// comes back — there is no second copy of "progress" to fall out of sync.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, this.onSelectTab});
-
-  final ValueChanged<AppTab>? onSelectTab;
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +34,7 @@ class HomeScreen extends StatelessWidget {
     final focus = provider.focusWorkout;
 
     return Scaffold(
-      appBar: BrandAppBar(onAvatar: () => onSelectTab?.call(AppTab.profile)),
+      appBar: const BrandAppBar(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
@@ -48,19 +45,11 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _FocusCard(workout: focus),
           const SizedBox(height: 24),
-          SectionHeader(
-            label: 'This week',
-            actionLabel: 'Calendar',
-            onAction: () => onSelectTab?.call(AppTab.calendar),
-          ),
+          const SectionHeader(label: 'This week'),
           const SizedBox(height: 10),
           _WeekRow(provider: provider),
           const SizedBox(height: 24),
-          SectionHeader(
-            label: 'Recent sessions',
-            actionLabel: 'See all',
-            onAction: () => onSelectTab?.call(AppTab.calendar),
-          ),
+          const SectionHeader(label: 'Recent sessions'),
           const SizedBox(height: 10),
           ..._recent(provider).map(
             (workout) => Padding(

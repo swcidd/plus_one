@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/workout_provider.dart';
-import 'screens/navigation_shell.dart';
+import 'screens/home_screen.dart';
 import 'screens/workout_details_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -10,18 +10,22 @@ void main() {
   runApp(const PlusOneApp());
 }
 
+/// Route for the dashboard.
+abstract final class AppRoutes {
+  static const String home = '/';
+}
+
 /// Root of the application.
 ///
-/// Every destination is a named route rather than a constructor call from the
-/// shell, which is what makes the route table legible in one place and lets a
-/// deep link open any screen directly. The four tabs resolve to the same shell
-/// with a different initial tab selected, so a route that is never navigated
-/// to still produces the correct screen.
+/// The dashboard is the only destination declared in [routes]; the workout
+/// detail screen is built by [onGenerateRoute] because it is parameterised. A
+/// `routes` entry can only match an exact string, so `/workout/:id` needed a
+/// RouteFactory — and putting the id in the path rather than a route argument
+/// makes a deep link shareable.
 ///
-/// The workout detail route is built by [onGenerateRoute] rather than declared
-/// in [routes] because it is a parameterised path: `/workout/:id` is what the
-/// route table documents, and a `routes` entry can only match an exact string.
-/// The id travels in the path so the link itself is shareable and bookmarkable.
+/// Falls through to null for anything unrecognised, so Flutter raises its own
+/// "unknown route" error instead of this method quietly substituting the wrong
+/// screen.
 class PlusOneApp extends StatelessWidget {
   const PlusOneApp({super.key});
 
@@ -35,43 +39,24 @@ class PlusOneApp extends StatelessWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,
-        initialRoute: AppTab.home.routeName,
+        initialRoute: AppRoutes.home,
         onGenerateRoute: _onGenerateRoute,
-        routes: {
-          for (final tab in AppTab.values)
-            tab.routeName: (_) => AppShell(initialTab: tab),
-        },
+        routes: {AppRoutes.home: (_) => const HomeScreen()},
       ),
     );
   }
 
-  /// Resolves a URL to a screen.
-  ///
-  /// Falls through to null for anything unrecognised so Flutter raises its own
-  /// "unknown route" error rather than this method quietly substituting a
-  /// wrong screen.
   Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
-    final segments = settings.name
-        ?.split('/')
-        .where((segment) => segment.isNotEmpty)
-        .toList();
+    final name = settings.name;
+    if (name == null) return null;
 
-    if (segments != null && segments.isNotEmpty) {
-      final root = '/${segments.first}';
-      for (final tab in AppTab.values) {
-        if (tab.routeName == root) {
-          return MaterialPageRoute<void>(
-            builder: (_) => AppShell(initialTab: tab),
-            settings: settings,
-          );
-        }
-      }
-      if (root == WorkoutDetailsScreen.routeName) {
-        return MaterialPageRoute<void>(
-          builder: (_) => WorkoutDetailsScreen(route: settings),
-          settings: settings,
-        );
-      }
+    final segments = name.split('/').where((s) => s.isNotEmpty).toList();
+    if (segments.isNotEmpty &&
+        '/${segments.first}' == WorkoutDetailsScreen.routeName) {
+      return MaterialPageRoute<void>(
+        builder: (_) => WorkoutDetailsScreen(route: settings),
+        settings: settings,
+      );
     }
 
     return null;

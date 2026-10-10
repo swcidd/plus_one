@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:plus_one/main.dart';
 import 'package:plus_one/theme/app_colors.dart';
 import 'package:plus_one/theme/app_theme.dart';
+import 'package:plus_one/widgets/workout_card.dart';
 
 void main() {
   setUpAll(() {
@@ -57,55 +58,36 @@ void main() {
     expect(recent, findsOneWidget);
   });
 
-  testWidgets('the tab bar exposes all four destinations', (
+  testWidgets('the dashboard is the only declared route', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const PlusOneApp());
     await tester.pumpAndSettle();
 
-    final bar = find.byType(NavigationBar);
-    expect(bar, findsOneWidget);
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.routes?.keys, ['/']);
 
-    for (final label in ['Home', 'Calendar', 'Library', 'Profile']) {
-      expect(
-        find.descendant(of: bar, matching: find.text(label)),
-        findsOneWidget,
-        reason: 'the tab bar should offer $label',
-      );
-    }
+    // No tab bar yet: the other screens are built next, and a tab bar with one
+    // destination would be a control that presents a choice it cannot honour.
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(BottomNavigationBar), findsNothing);
   });
 
-  testWidgets('switching tabs swaps the visible screen', (
+  testWidgets('the workout card opens the detail screen by path', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const PlusOneApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('UP NEXT'), findsOneWidget);
+    final recent = find.text('RECENT SESSIONS');
+    await tester.scrollUntilVisible(recent, 200);
 
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('Calendar'),
-      ),
-    );
+    // Pushes `/workout/<id>` rather than the bare route name, so the id
+    // travels in the path and the resulting link is shareable.
+    await tester.tap(find.byType(WorkoutCard).first);
     await tester.pumpAndSettle();
 
-    // The calendar owns a weekday header row that the dashboard has no
-    // equivalent of, so its presence proves the tab actually changed.
-    expect(find.text('MON'), findsOneWidget);
-
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('Profile'),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final records = find.text('PERSONAL RECORDS');
-    await tester.scrollUntilVisible(records, 200);
-    expect(records, findsOneWidget);
+    expect(find.text('Workout Detail'), findsOneWidget);
   });
 
   testWidgets('the dashboard no longer leads with general health metrics', (
