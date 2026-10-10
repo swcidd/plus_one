@@ -39,6 +39,7 @@ dependencies:
   fl_chart: ^1.2.0
   google_fonts: ^9.0.0
   equatable: ^2.1.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -56,11 +57,12 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+
+  # The dumbbell mark on the workout button. Declared as a directory so new
+  # artwork lands beside it without another edit here.
+  assets:
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
