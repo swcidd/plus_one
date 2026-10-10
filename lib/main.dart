@@ -24,29 +24,25 @@ void main() {
 /// "unknown route" error instead of this method quietly substituting the wrong
 /// screen.
 class PlusOneApp extends StatelessWidget {
-  const PlusOneApp({super.key});
+  const PlusOneApp({super.key, this.provider});
 
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => WorkoutProvider(),
-      child: MaterialApp(
-        title: '+1',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        initialRoute: AppTab.home.routeName,
-        onGenerateRoute: _onGenerateRoute,
-        routes: {
-          for (final tab in AppTab.values)
-            tab.routeName: (_) => AppShell(tab: tab),
-        },
-      ),
-    );
-  }
+  /// Injected state, or a fresh empty account when null.
+  ///
+  /// Exists so tests can drive the real application - same routes, same theme -
+  /// against known content. Without it a widget test can only ever see the
+  /// empty default, which is a state no user ever reaches after signing in.
+  final WorkoutProvider? provider;
 
-  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+  /// Every root destination, so a test harness can reuse the app's own route
+  /// table instead of maintaining a second one that can drift.
+  static Map<String, WidgetBuilder> get routes => {
+    for (final tab in AppTab.values) tab.routeName: (_) => AppShell(tab: tab),
+  };
+
+  /// Resolves the parameterised workout route. Null for anything unrecognised,
+  /// so Flutter raises its own "unknown route" error instead of this
+  /// substituting the wrong screen.
+  static Route<dynamic>? routeFor(RouteSettings settings) {
     final name = settings.name;
     if (name == null) return null;
 
@@ -60,5 +56,29 @@ class PlusOneApp extends StatelessWidget {
     }
 
     return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = provider;
+    final app = MaterialApp(
+      title: '+1',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      initialRoute: AppTab.home.routeName,
+      onGenerateRoute: routeFor,
+      routes: routes,
+    );
+
+    if (state != null) {
+      return ChangeNotifierProvider<WorkoutProvider>.value(
+        value: state,
+        child: app,
+      );
+    }
+
+    return ChangeNotifierProvider(create: (_) => WorkoutProvider(), child: app);
   }
 }

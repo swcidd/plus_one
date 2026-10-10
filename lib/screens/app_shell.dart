@@ -45,7 +45,17 @@ class _AppShellState extends State<AppShell> {
   void _startWorkout() {
     final provider = context.read<WorkoutProvider>();
     final target = provider.focusWorkout ?? provider.workouts.lastOrNull;
-    if (target == null) return;
+
+    if (target == null) {
+      // An account with no sessions has nothing to open. Sending the user to the
+      // tab where they would build one is better than a button that does
+      // nothing, and better than pushing a detail screen for a workout that does
+      // not exist.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Log your first workout to get started.')),
+      );
+      return;
+    }
 
     Navigator.of(context).pushNamed(WorkoutDetailsScreen.routeFor(target.id));
   }

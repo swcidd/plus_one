@@ -81,8 +81,33 @@ class Achievement extends Equatable {
 
 /// Everything the profile screen renders about the signed-in lifter.
 class ProfileStats extends Equatable {
+  /// A brand new account: no name, no history, nothing earned.
+  ///
+  /// Every field is zeroed rather than absent so the profile screen has
+  /// numbers to render before the account has any. A screen reading `null`
+  /// would need a branch per figure; zero renders as an honest "0" without
+  /// one. Records and achievements are empty, since there is nothing to have
+  /// earned yet.
+  factory ProfileStats.empty() => const ProfileStats(
+    name: '',
+    handle: '',
+    role: '',
+    memberSince: '',
+    isPro: false,
+    weightKg: 0,
+    heightCm: 0,
+    bodyFatPct: 0,
+    restingHrBpm: 0,
+    totalWorkouts: 0,
+    totalKcal: 0,
+    totalHours: 0,
+    streakDays: 0,
+    badgeCount: 0,
+    records: [],
+    achievements: [],
+  );
   const ProfileStats({
-    required this.name,
+    this.name = '',
     required this.handle,
     required this.role,
     required this.memberSince,

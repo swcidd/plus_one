@@ -4,7 +4,6 @@ import '../models/exercise.dart';
 import '../models/metric.dart';
 import '../models/profile_stats.dart';
 import '../models/workout.dart';
-import 'seed_data.dart';
 
 /// Single source of truth for workout state.
 ///
@@ -12,6 +11,11 @@ import 'seed_data.dart';
 /// so there is one place where a change is decided and exactly one
 /// `notifyListeners` per change. Nothing here knows about widgets, which
 /// keeps the API swap later confined to the constructors.
+///
+/// Starts empty. A new account has no sessions and no profile, and every
+/// screen is expected to render that honestly rather than the provider
+/// inventing sample content behind the user's back. Tests pass fixtures in
+/// through the constructor instead of relying on a default they cannot see.
 class WorkoutProvider extends ChangeNotifier {
   WorkoutProvider({
     DateTime? today,
@@ -22,9 +26,9 @@ class WorkoutProvider extends ChangeNotifier {
        // Copies are deliberate: callers often hand over const or
        // unmodifiable fixtures, and this class has to stay free to reorder
        // and replace entries in place.
-       _workouts = List.of(workouts ?? seedWorkouts(today ?? DateTime.now())),
-       _metrics = List.of(metrics ?? seedMetrics()),
-       _profile = profile ?? seedProfile() {
+       _workouts = List.of(workouts ?? const []),
+       _metrics = List.of(metrics ?? const []),
+       _profile = profile ?? ProfileStats.empty() {
     _sort();
   }
 
