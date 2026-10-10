@@ -6,6 +6,7 @@ import '../providers/workout_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/brand_app_bar.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/new_workout_dialog.dart';
 import 'home_screen.dart';
 import 'workout_details_screen.dart';
 
@@ -36,28 +37,30 @@ class _AppShellState extends State<AppShell> {
     setState(() => _active = tab);
   }
 
-  /// The bar's action: go to whatever the lifter would train next.
+  /// The bar's action, which does one of two things depending on the account.
   ///
-  /// Opens today's plan when there is one, and falls back to the most recent
-  /// session rather than doing nothing, so the button is never a dead control.
-  /// Building a session from scratch needs a form, which is the next screen -
-  /// until then the button takes the user somewhere real.
-  void _startWorkout() {
+  /// With a session to train it opens that session. With nothing scheduled it
+  /// opens the create form, because that is the only sensible next step for an
+  /// account with no sessions - and the one the user is reaching for.
+  Future<void> _startWorkout() async {
     final provider = context.read<WorkoutProvider>();
     final target = provider.focusWorkout ?? provider.workouts.lastOrNull;
+    final navigator = Navigator.of(context);
 
-    if (target == null) {
-      // An account with no sessions has nothing to open. Sending the user to the
-      // tab where they would build one is better than a button that does
-      // nothing, and better than pushing a detail screen for a workout that does
-      // not exist.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Log your first workout to get started.')),
-      );
+    if (target != null) {
+      navigator.pushNamed(WorkoutDetailsScreen.routeFor(target.id));
       return;
     }
 
-    Navigator.of(context).pushNamed(WorkoutDetailsScreen.routeFor(target.id));
+    final created = await NewWorkoutDialog.show(context);
+    if (created == null) return;
+
+    // Held locally rather than read through context again: the dialog closes
+    // above this widget, and the navigator it pushed onto is the same one, so
+    // the detail screen has to be pushed here to sit on top of the shell
+    // instead of inside the dismissed dialog's route.
+    final stored = provider.addWorkout(created);
+    navigator.pushNamed(WorkoutDetailsScreen.routeFor(stored.id));
   }
 
   @override
