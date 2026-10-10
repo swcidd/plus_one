@@ -4,12 +4,14 @@ import 'package:plus_one/models/metric.dart';
 import 'package:plus_one/models/workout.dart';
 import 'package:plus_one/providers/workout_provider.dart';
 
+import 'support/fixtures.dart';
+
 void main() {
   // Fixed date keeps streak and consistency assertions stable regardless of
   // when the suite runs.
   final today = DateTime(2026, 10, 6);
 
-  WorkoutProvider build() => WorkoutProvider(today: today);
+  WorkoutProvider build() => seededProvider(today: today);
 
   WorkoutProvider buildWithPlan() {
     final provider = build();

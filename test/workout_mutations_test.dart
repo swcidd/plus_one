@@ -4,10 +4,12 @@ import 'package:plus_one/models/exercise.dart';
 import 'package:plus_one/models/workout.dart';
 import 'package:plus_one/providers/workout_provider.dart';
 
+import 'support/fixtures.dart';
+
 void main() {
   final today = DateTime(2026, 10, 6);
 
-  WorkoutProvider build() => WorkoutProvider(today: today);
+  WorkoutProvider build() => seededProvider(today: today);
 
   WorkoutProvider buildEmpty() =>
       WorkoutProvider(today: today, workouts: const []);

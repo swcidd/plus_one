@@ -3,9 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'package:plus_one/providers/workout_provider.dart';
 import 'package:plus_one/screens/workout_details_screen.dart';
 import 'package:plus_one/theme/app_theme.dart';
+
+import 'support/fixtures.dart';
 
 void main() {
   setUpAll(() {
@@ -20,7 +21,7 @@ void main() {
   /// reach a known fixture instead of whatever the live app seeds.
   Widget harness({String? id}) {
     return ChangeNotifierProvider(
-      create: (_) => WorkoutProvider(today: today),
+      create: (_) => seededProvider(today: today),
       child: MaterialApp(
         theme: AppTheme.light(),
         routes: {

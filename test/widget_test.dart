@@ -1,337 +1,363 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import 'package:plus_one/main.dart';
 import 'package:plus_one/theme/app_colors.dart';
 import 'package:plus_one/theme/app_theme.dart';
 import 'package:plus_one/widgets/bottom_nav_bar.dart';
 import 'package:plus_one/widgets/workout_action_button.dart';
 import 'package:plus_one/widgets/workout_card.dart';
 
+import 'support/harness.dart';
+
 void main() {
-  setUpAll(() {
-    // Tests run offline; letting google_fonts hit the network makes them
-    // flaky and slow. The platform font is enough to assert layout.
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(useOfflineFonts);
 
-  testWidgets('renders the dashboard shell with the Deep Blue Sea theme', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+  group('theme', () {
+    test('light scheme lands on the palette, not an approximation', () {
+      final scheme = AppTheme.colorScheme(Brightness.light);
 
-    expect(find.text('Plus One'), findsOneWidget);
-    expect(find.text('Workout Tracker'), findsOneWidget);
+      expect(scheme.brightness, Brightness.light);
+      expect(scheme.primary, AppColors.regalNavy);
+      expect(scheme.surface, AppColors.mintCream);
+      expect(scheme.onSurface, AppColors.prussianBlue);
+      expect(scheme.secondary, AppColors.powderBlue);
+    });
 
-    // The screen leads with the session of the day, so its heading and the
-    // action that opens it are both above the fold on first paint.
-    expect(find.text('UP NEXT'), findsOneWidget);
-    expect(find.textContaining('Upper Body'), findsOneWidget);
-    expect(find.text('Resume workout'), findsOneWidget);
+    test('dark scheme mirrors the palette off the Prussian Blue page', () {
+      final scheme = AppTheme.colorScheme(Brightness.dark);
 
-    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(app.theme?.useMaterial3, isTrue);
-    expect(
-      app.theme?.colorScheme.primary,
-      AppTheme.light().colorScheme.primary,
-    );
-    expect(app.darkTheme?.colorScheme.brightness, Brightness.dark);
-  });
+      expect(scheme.brightness, Brightness.dark);
+      expect(scheme.surface, AppColors.prussianBlue);
+      expect(scheme.onSurface, AppColors.mintCream);
+      expect(scheme.primary, AppColors.mintCream);
+      expect(scheme.onPrimary, AppColors.prussianBlue);
+    });
 
-  testWidgets('weekly summary and recent sessions sit below the session card', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+    test('every text pair in both modes clears WCAG AA', () {
+      for (final brightness in Brightness.values) {
+        final scheme = AppTheme.colorScheme(brightness);
 
-    final week = find.text('THIS WEEK');
-    await tester.scrollUntilVisible(week, 200);
-    expect(week, findsOneWidget);
-
-    // Sessions are shown against the goal rather than as raw totals, which is
-    // the whole point of the weekly tile.
-    expect(find.text('SESSIONS'), findsOneWidget);
-    expect(find.text('DAY STREAK'), findsOneWidget);
-
-    final recent = find.text('RECENT SESSIONS');
-    await tester.scrollUntilVisible(recent, 200);
-    expect(recent, findsOneWidget);
-  });
-
-  testWidgets('the bar offers every destination exactly once', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    final bar = find.byType(AppBottomNav);
-    expect(bar, findsOneWidget);
-
-    for (final label in ['Home', 'Calendar', 'Library', 'Profile']) {
-      expect(
-        find.descendant(of: bar, matching: find.text(label)),
-        findsOneWidget,
-        reason: 'the bar should offer $label',
-      );
-    }
-  });
-
-  testWidgets('tapping a destination swaps the visible screen', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    expect(find.text('UP NEXT'), findsOneWidget);
-
-    await _tapDestination(tester, 'Calendar');
-    expect(find.text('Calendar is next'), findsOneWidget);
-
-    await _tapDestination(tester, 'Library');
-    expect(find.text('Library is next'), findsOneWidget);
-  });
-
-  testWidgets('the dashboard avatar opens the profile tab', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    // The avatar is a cross-tab shortcut, so it has to reach the same place a
-    // tap on the bar does rather than push a second profile route.
-    // Scoped to the app bar: the bar's Profile destination carries the same
-    // tooltip, so an unscoped lookup would find both.
-    await tester.tap(
-      find.descendant(
-        of: find.byType(AppBar),
-        matching: find.byTooltip('Profile'),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Profile is next'), findsOneWidget);
-  });
-
-  testWidgets('the action sits in the middle, between calendar and library', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    final bar = find.byType(AppBottomNav);
-    double xOf(String label) => tester
-        .getCenter(find.descendant(of: bar, matching: find.text(label)))
-        .dx;
-
-    // The action has to land between the two tabs it separates, not on top of
-    // either. An off-centre button reads as a layout mistake even when
-    // everything is tappable.
-    final action = tester.getCenter(find.byType(WorkoutActionButton)).dx;
-    expect(action, greaterThan(xOf('Calendar')));
-    expect(action, lessThan(xOf('Library')));
-
-    // And it has to be centred on the bar, not merely between the two.
-    final barCentre = tester.getCenter(bar).dx;
-    expect(action, closeTo(barCentre, 1));
-  });
-
-  testWidgets('the action opens the session to train next', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(WorkoutActionButton));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Workout Detail'), findsOneWidget);
-  });
-
-  testWidgets('the action is labelled, and says so exactly once', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    final button = find.byType(WorkoutActionButton);
-    expect(button, findsOneWidget);
-
-    // The label belongs to the control, not to the bar's destination row, so it
-    // renders inside the button rather than as a sixth navigation entry.
-    expect(
-      find.descendant(of: button, matching: find.text('WORKOUT')),
-      findsOneWidget,
-    );
-
-    // excludeSemantics on the button is what stops a screen reader announcing
-    // the label twice; the visible text is still announced through the button's
-    // own label, so the two must not also appear as separate semantics nodes.
-    final node = tester.getSemantics(find.byType(WorkoutActionButton));
-    expect(
-      node.label,
-      contains('Workout'),
-      reason: 'the circle needs an accessible name without its own',
-    );
-  });
-
-  testWidgets('the action and its label fit inside the bar', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
-
-    final bar = find.byType(AppBottomNav);
-    final barBottom = tester.getBottomLeft(bar).dy;
-    final screenBottom =
-        tester.view.physicalSize.height / tester.view.devicePixelRatio;
-
-    // The label sits below the circle, so a fixed top padding alone would push
-    // the text past the bottom of the bar and off the screen.
-    final labelCentre = tester
-        .getCenter(
-          find.descendant(
-            of: find.byType(WorkoutActionButton),
-            matching: find.text('WORKOUT'),
+        final pairs = <String, (Color, Color, double)>{
+          'body text': (scheme.onSurface, scheme.surface, 7),
+          'secondary text': (scheme.onSurfaceVariant, scheme.surface, 4.5),
+          'filled control': (scheme.onPrimary, scheme.primary, 4.5),
+          'container text': (
+            scheme.onSecondaryContainer,
+            scheme.secondaryContainer,
+            4.5,
           ),
-        )
-        .dy;
-    expect(labelCentre, lessThanOrEqualTo(barBottom));
-    expect(labelCentre, lessThan(screenBottom));
+          'inverse surface': (
+            scheme.onInverseSurface,
+            scheme.inverseSurface,
+            4.5,
+          ),
+        };
+
+        pairs.forEach((label, pair) {
+          final (foreground, background, minimum) = pair;
+          expect(
+            contrast(foreground, background),
+            greaterThanOrEqualTo(minimum),
+            reason:
+                '$label in $brightness mode: '
+                '${foreground.toHex()} on ${background.toHex()}',
+          );
+        });
+      }
+    });
   });
 
-  testWidgets('the action is not a fifth destination', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+  group('empty account', () {
+    testWidgets('the dashboard opens with nothing in it', (tester) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
 
-    // The bar has five slots but four destinations; if the action were routed
-    // as a destination it would need its own URL, which it has no screen for.
-    final bar = find.byType(AppBottomNav);
-    final dest = tester.widget<NavigationBar>(
-      find.descendant(of: bar, matching: find.byType(NavigationBar)),
-    );
-    expect(dest.destinations, hasLength(5));
+      expect(find.text('Plus One'), findsOneWidget);
+      expect(find.text('Workout Tracker'), findsOneWidget);
 
-    // NavigationDestination stores its labels as widgets, so the names are
-    // asserted from the rendered bar rather than from the destination objects.
-    expect(find.text('Profile'), findsOneWidget);
-    expect(find.byType(WorkoutActionButton), findsOneWidget);
-  });
+      // No session, so the card has to say so rather than inviting the user to
+      // resume something that does not exist.
+      expect(find.text('NO SESSION SCHEDULED'), findsOneWidget);
+      expect(find.text('Rest day'), findsOneWidget);
+      expect(find.text('Resume workout'), findsNothing);
+      expect(find.text('Start workout'), findsNothing);
+    });
 
-  testWidgets('a tab route opens its own tab, not the home one', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+    testWidgets('the weekly tiles read zero rather than missing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
 
-    // Replaces the shell rather than stacking on top of it, which is what
-    // keeps `/calendar` from rendering behind a live home screen.
-    await tester.binding.handlePushRoute('/library');
-    await tester.pumpAndSettle();
+      final week = find.text('THIS WEEK');
+      await tester.scrollUntilVisible(week, 200);
 
-    expect(find.text('Library is next'), findsOneWidget);
-  });
+      expect(find.text('SESSIONS'), findsOneWidget);
+      expect(find.text('DAY STREAK'), findsOneWidget);
+      // 0 of the default goal, and a zero-day streak.
+      expect(find.text('0/4'), findsOneWidget);
+      expect(find.text('0'), findsWidgets);
+    });
 
-  testWidgets('the workout card opens the detail screen by path', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+    testWidgets('recent sessions offers a way forward when empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
 
-    // Scrolled to the card itself rather than to the section heading: the
-    // heading can be visible while the first row is still below the fold, and
-    // tapping an off-screen widget silently hits whatever is at its position.
-    final card = find.byType(WorkoutCard).first;
-    await tester.scrollUntilVisible(card, 200);
-    // Settled separately because the scroll animates; tapping mid-flight would
-    // hit whatever row had moved into the tapped position instead.
-    await tester.pumpAndSettle();
+      final empty = find.text('No finished sessions yet');
+      await tester.scrollUntilVisible(empty, 200);
+      expect(empty, findsOneWidget);
 
-    // Pushes `/workout/<id>` rather than the bare route name, so the id travels
-    // in the path and the resulting link is shareable.
-    await tester.tap(card);
-    await tester.pumpAndSettle();
+      // An empty list that only says "nothing here" leaves the user with no way
+      // forward, which is the whole reason EmptyState carries an action.
+      expect(find.byType(WorkoutCard), findsNothing);
+    });
 
-    expect(find.text('Workout Detail'), findsOneWidget);
-  });
+    testWidgets('the action cannot navigate when there is nothing to open', (
+      tester,
+    ) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
 
-  testWidgets('the dashboard no longer leads with general health metrics', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const PlusOneApp());
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
 
-    // Heart rate, steps, sleep and calories belong to a general fitness app.
-    // +1 tracks strength training, so their absence is the point: it is what
-    // separates this from every other dashboard wearing the same layout.
-    for (final removed in [
-      'HEART RATE',
-      'CALORIES',
-      'STEPS',
-      'SLEEP SCORE',
-      'HYDRATION',
-      'DAILY GOALS',
-      "TODAY'S VITALS",
-      'DAILY COMPLIANCE',
-    ]) {
-      expect(find.text(removed), findsNothing, reason: '$removed was removed');
-    }
-  });
+      // There is nothing to open, so the button must not push a detail screen
+      // for a workout that does not exist. It says why instead of going
+      // nowhere, which is the difference between a control and a dead end.
+      expect(find.text('Workout Detail'), findsNothing);
+      expect(
+        find.text('Log your first workout to get started.'),
+        findsOneWidget,
+      );
+    });
 
-  test('light scheme lands on the palette, not an approximation', () {
-    final scheme = AppTheme.colorScheme(Brightness.light);
+    testWidgets('the dashboard leads with no general health metrics', (
+      tester,
+    ) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
 
-    expect(scheme.brightness, Brightness.light);
-    expect(scheme.primary, AppColors.regalNavy);
-    expect(scheme.surface, AppColors.mintCream);
-    expect(scheme.onSurface, AppColors.prussianBlue);
-    expect(scheme.secondary, AppColors.powderBlue);
-  });
-
-  test('dark scheme mirrors the palette off the Prussian Blue page', () {
-    final scheme = AppTheme.colorScheme(Brightness.dark);
-
-    expect(scheme.brightness, Brightness.dark);
-    expect(scheme.surface, AppColors.prussianBlue);
-    expect(scheme.onSurface, AppColors.mintCream);
-    expect(scheme.primary, AppColors.mintCream);
-    expect(scheme.onPrimary, AppColors.prussianBlue);
-  });
-
-  test('every text pair in both modes clears WCAG AA', () {
-    for (final brightness in Brightness.values) {
-      final scheme = AppTheme.colorScheme(brightness);
-
-      final pairs = <String, (Color, Color, double)>{
-        'body text': (scheme.onSurface, scheme.surface, 7),
-        'secondary text': (scheme.onSurfaceVariant, scheme.surface, 4.5),
-        'filled control': (scheme.onPrimary, scheme.primary, 4.5),
-        'container text': (
-          scheme.onSecondaryContainer,
-          scheme.secondaryContainer,
-          4.5,
-        ),
-        'inverse surface': (
-          scheme.onInverseSurface,
-          scheme.inverseSurface,
-          4.5,
-        ),
-      };
-
-      pairs.forEach((label, pair) {
-        final (foreground, background, minimum) = pair;
+      // Heart rate, steps, sleep and calories belong to a general fitness app.
+      // +1 tracks strength training, so their absence is the point: it is what
+      // separates this from every other dashboard wearing the same layout.
+      for (final removed in [
+        'HEART RATE',
+        'CALORIES',
+        'STEPS',
+        'SLEEP SCORE',
+        'HYDRATION',
+        'DAILY GOALS',
+        "TODAY'S VITALS",
+        'DAILY COMPLIANCE',
+      ]) {
         expect(
-          contrast(foreground, background),
-          greaterThanOrEqualTo(minimum),
-          reason:
-              '$label in $brightness mode: '
-              '${foreground.toHex()} on ${background.toHex()}',
+          find.text(removed),
+          findsNothing,
+          reason: '$removed was removed',
         );
-      });
-    }
+      }
+    });
+  });
+
+  group('populated account', () {
+    testWidgets('the dashboard leads with the session of the day', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('UP NEXT'), findsOneWidget);
+      expect(find.textContaining('Upper Body'), findsOneWidget);
+      expect(find.text('Resume workout'), findsOneWidget);
+    });
+
+    testWidgets('the workout card opens the detail screen by path', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      // Scrolled to the card itself rather than to the section heading: the
+      // heading can be visible while the first row is still below the fold, and
+      // tapping an off-screen widget silently hits whatever is at its position.
+      final card = find.byType(WorkoutCard).first;
+      await tester.scrollUntilVisible(card, 200);
+      // Settled separately because the scroll animates; tapping mid-flight
+      // would hit whatever row had moved into the tapped position instead.
+      await tester.pumpAndSettle();
+
+      // Pushes `/workout/<id>` rather than the bare route name, so the id
+      // travels in the path and the resulting link is shareable.
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workout Detail'), findsOneWidget);
+    });
+  });
+
+  group('destination bar', () {
+    testWidgets('offers every destination exactly once', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      final bar = find.byType(AppBottomNav);
+      expect(bar, findsOneWidget);
+
+      for (final label in ['Home', 'Calendar', 'Library', 'Profile']) {
+        expect(
+          find.descendant(of: bar, matching: find.text(label)),
+          findsOneWidget,
+          reason: 'the bar should offer $label',
+        );
+      }
+    });
+
+    testWidgets('tapping a destination swaps the visible screen', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('UP NEXT'), findsOneWidget);
+
+      await _tapDestination(tester, 'Calendar');
+      expect(find.text('Calendar is next'), findsOneWidget);
+
+      await _tapDestination(tester, 'Library');
+      expect(find.text('Library is next'), findsOneWidget);
+    });
+
+    testWidgets('the dashboard avatar opens the profile tab', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      // The avatar is a cross-tab shortcut, so it has to reach the same place a
+      // tap on the bar does rather than push a second profile route. Scoped to
+      // the app bar: the bar's Profile destination carries the same tooltip.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byTooltip('Profile'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Profile is next'), findsOneWidget);
+    });
+
+    testWidgets('a tab route opens its own tab, not the home one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      // Replaces the shell rather than stacking on top of it, which is what
+      // keeps `/calendar` from rendering behind a live home screen.
+      await tester.binding.handlePushRoute('/library');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Library is next'), findsOneWidget);
+    });
+  });
+
+  group('bar action', () {
+    testWidgets('sits in the middle, between calendar and library', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      final bar = find.byType(AppBottomNav);
+      double xOf(String label) => tester
+          .getCenter(find.descendant(of: bar, matching: find.text(label)))
+          .dx;
+
+      // The action has to land between the two tabs it separates, not on top of
+      // either. An off-centre button reads as a layout mistake even when
+      // everything is tappable.
+      final action = tester.getCenter(find.byType(WorkoutActionButton)).dx;
+      expect(action, greaterThan(xOf('Calendar')));
+      expect(action, lessThan(xOf('Library')));
+
+      // And it has to be centred on the bar, not merely between the two.
+      expect(action, closeTo(tester.getCenter(bar).dx, 1));
+    });
+
+    testWidgets('opens the session to train next', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workout Detail'), findsOneWidget);
+    });
+
+    testWidgets('is labelled, and says so exactly once', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      final button = find.byType(WorkoutActionButton);
+      expect(button, findsOneWidget);
+
+      // The label belongs to the control, not to the bar's destination row, so
+      // it renders inside the button rather than as a sixth navigation entry.
+      expect(
+        find.descendant(of: button, matching: find.text('WORKOUT')),
+        findsOneWidget,
+      );
+
+      // excludeSemantics on the button is what stops a screen reader announcing
+      // the label twice; the visible text is still announced through the
+      // button's own label, so the two must not also be separate nodes.
+      final node = tester.getSemantics(find.byType(WorkoutActionButton));
+      expect(
+        node.label,
+        contains('Workout'),
+        reason: 'the circle needs an accessible name without its own',
+      );
+    });
+
+    testWidgets('and its label fit inside the bar', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      final bar = find.byType(AppBottomNav);
+      final barBottom = tester.getBottomLeft(bar).dy;
+      final screenBottom =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+      // The label sits below the circle, so a fixed top padding alone would push
+      // the text past the bottom of the bar and off the screen.
+      final labelCentre = tester
+          .getCenter(
+            find.descendant(
+              of: find.byType(WorkoutActionButton),
+              matching: find.text('WORKOUT'),
+            ),
+          )
+          .dy;
+      expect(labelCentre, lessThanOrEqualTo(barBottom));
+      expect(labelCentre, lessThan(screenBottom));
+    });
+
+    testWidgets('is not a fifth destination', (tester) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      // The bar has five slots but four destinations; if the action were routed
+      // as a destination it would need its own URL, which it has no screen for.
+      final bar = find.byType(AppBottomNav);
+      final dest = tester.widget<NavigationBar>(
+        find.descendant(of: bar, matching: find.byType(NavigationBar)),
+      );
+      expect(dest.destinations, hasLength(5));
+
+      expect(find.text('Profile'), findsOneWidget);
+      expect(find.byType(WorkoutActionButton), findsOneWidget);
+    });
   });
 }
 
