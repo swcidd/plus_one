@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'navigation/app_tab.dart';
 import 'providers/workout_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/app_shell.dart';
 import 'screens/workout_details_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -10,18 +11,14 @@ void main() {
   runApp(const PlusOneApp());
 }
 
-/// Route for the dashboard.
-abstract final class AppRoutes {
-  static const String home = '/';
-}
-
 /// Root of the application.
 ///
-/// The dashboard is the only destination declared in [routes]; the workout
-/// detail screen is built by [onGenerateRoute] because it is parameterised. A
+/// The four tabs are declared in [routes], each resolving to the shell with its
+/// own tab selected, so every destination has a real URL. The workout detail
+/// screen is built by [onGenerateRoute] because it is parameterised: a
 /// `routes` entry can only match an exact string, so `/workout/:id` needed a
-/// RouteFactory — and putting the id in the path rather than a route argument
-/// makes a deep link shareable.
+/// RouteFactory. Putting the id in the path rather than a route argument makes
+/// the resulting link shareable.
 ///
 /// Falls through to null for anything unrecognised, so Flutter raises its own
 /// "unknown route" error instead of this method quietly substituting the wrong
@@ -39,9 +36,12 @@ class PlusOneApp extends StatelessWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,
-        initialRoute: AppRoutes.home,
+        initialRoute: AppTab.home.routeName,
         onGenerateRoute: _onGenerateRoute,
-        routes: {AppRoutes.home: (_) => const HomeScreen()},
+        routes: {
+          for (final tab in AppTab.values)
+            tab.routeName: (_) => AppShell(tab: tab),
+        },
       ),
     );
   }

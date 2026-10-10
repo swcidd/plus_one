@@ -10,6 +10,7 @@ import '../widgets/brand_app_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/section_header.dart';
+import '../navigation/app_tab.dart';
 import '../widgets/stat_tile.dart';
 import '../widgets/workout_card.dart';
 import 'workout_details_screen.dart';
@@ -26,7 +27,12 @@ import 'workout_details_screen.dart';
 /// ticking a set on the detail screen moves this screen the moment the user
 /// comes back — there is no second copy of "progress" to fall out of sync.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onSelectTab});
+
+  /// Switches the shell to another tab. Passed in rather than reached for
+  /// through an InheritedWidget so the dashboard still renders standalone, on
+  /// its own route or in a test, without a shell above it.
+  final ValueChanged<AppTab>? onSelectTab;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +40,7 @@ class HomeScreen extends StatelessWidget {
     final focus = provider.focusWorkout;
 
     return Scaffold(
-      appBar: const BrandAppBar(),
+      appBar: BrandAppBar(onAvatar: () => onSelectTab?.call(AppTab.profile)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
