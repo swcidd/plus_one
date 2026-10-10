@@ -38,7 +38,18 @@ void _showUndoSnack(
 /// the screen always renders the provider's current copy and picks up every
 /// mutation the moment it happens.
 class WorkoutDetailsScreen extends StatelessWidget {
-  const WorkoutDetailsScreen({super.key});
+  const WorkoutDetailsScreen({super.key, this.route});
+
+  /// The route the shell pushes. Accepting the [RouteSettings] lets the screen
+  /// read the id out of a `/workout/:id` path as well as a route argument, so a
+  /// deep link and an in-app push resolve the same way.
+  final RouteSettings? route;
+
+  /// Builds a path for [id], e.g. `detailRoute('upper-body')` →
+  /// `/workout/upper-body`. Pushing the named route with an argument still
+  /// works, but going through the path keeps one canonical form per
+  /// destination.
+  static String routeFor(String id) => '$routeName/$id';
 
   static const String routeName = '/workout';
 
@@ -48,7 +59,7 @@ class WorkoutDetailsScreen extends StatelessWidget {
     final id = switch (arguments) {
       String value => value,
       Workout value => value.id,
-      _ => null,
+      _ => _idFromPath(route?.name),
     };
 
     final provider = context.watch<WorkoutProvider>();
@@ -85,6 +96,14 @@ class WorkoutDetailsScreen extends StatelessWidget {
       body: _Body(workout: workout),
       bottomNavigationBar: _FinishBar(workout: workout),
     );
+  }
+
+  /// Pulls the id out of `/workout/<id>`, returning null for the bare route.
+  static String? _idFromPath(String? routeName) {
+    if (routeName == null) return null;
+    final segments = routeName.split('/').where((s) => s.isNotEmpty).toList();
+    if (segments.length < 2) return null;
+    return Uri.decodeComponent(segments[1]);
   }
 
   Future<void> _confirmDelete(BuildContext context, Workout workout) async {
