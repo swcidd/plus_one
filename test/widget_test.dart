@@ -21,9 +21,12 @@ void main() {
 
     expect(find.text('Plus One'), findsOneWidget);
     expect(find.text('Workout Tracker'), findsOneWidget);
-    expect(find.text("TODAY'S PLAN"), findsOneWidget);
-    expect(find.textContaining('Alex'), findsOneWidget);
-    expect(find.text('Resume Workout Session'), findsOneWidget);
+
+    // The screen leads with the session of the day, so its heading and the
+    // action that opens it are both above the fold on first paint.
+    expect(find.text('UP NEXT'), findsOneWidget);
+    expect(find.textContaining('Upper Body'), findsOneWidget);
+    expect(find.text('Resume workout'), findsOneWidget);
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.theme?.useMaterial3, isTrue);
@@ -34,19 +37,98 @@ void main() {
     expect(app.darkTheme?.colorScheme.brightness, Brightness.dark);
   });
 
-  testWidgets('dashboard metrics are reachable further down the list', (
+  testWidgets('weekly summary and recent sessions sit below the session card', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const PlusOneApp());
     await tester.pumpAndSettle();
 
-    final goals = find.text("DAILY GOALS");
-    await tester.scrollUntilVisible(goals, 200);
-    expect(goals, findsOneWidget);
+    final week = find.text('THIS WEEK');
+    await tester.scrollUntilVisible(week, 200);
+    expect(week, findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('HEART RATE'), 200);
-    expect(find.text('CALORIES'), findsOneWidget);
-    expect(find.text('HEART RATE'), findsOneWidget);
+    // Sessions are shown against the goal rather than as raw totals, which is
+    // the whole point of the weekly tile.
+    expect(find.text('SESSIONS'), findsOneWidget);
+    expect(find.text('DAY STREAK'), findsOneWidget);
+
+    final recent = find.text('RECENT SESSIONS');
+    await tester.scrollUntilVisible(recent, 200);
+    expect(recent, findsOneWidget);
+  });
+
+  testWidgets('the tab bar exposes all four destinations', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    final bar = find.byType(NavigationBar);
+    expect(bar, findsOneWidget);
+
+    for (final label in ['Home', 'Calendar', 'Library', 'Profile']) {
+      expect(
+        find.descendant(of: bar, matching: find.text(label)),
+        findsOneWidget,
+        reason: 'the tab bar should offer $label',
+      );
+    }
+  });
+
+  testWidgets('switching tabs swaps the visible screen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('UP NEXT'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Calendar'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The calendar owns a weekday header row that the dashboard has no
+    // equivalent of, so its presence proves the tab actually changed.
+    expect(find.text('MON'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Profile'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final records = find.text('PERSONAL RECORDS');
+    await tester.scrollUntilVisible(records, 200);
+    expect(records, findsOneWidget);
+  });
+
+  testWidgets('the dashboard no longer leads with general health metrics', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    // Heart rate, steps, sleep and calories belong to a general fitness app.
+    // +1 tracks strength training, so their absence is the point: it is what
+    // separates this from every other dashboard wearing the same layout.
+    for (final removed in [
+      'HEART RATE',
+      'CALORIES',
+      'STEPS',
+      'SLEEP SCORE',
+      'HYDRATION',
+      'DAILY GOALS',
+      "TODAY'S VITALS",
+      'DAILY COMPLIANCE',
+    ]) {
+      expect(find.text(removed), findsNothing, reason: '$removed was removed');
+    }
   });
 
   test('light scheme lands on the palette, not an approximation', () {
