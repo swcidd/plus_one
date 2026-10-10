@@ -149,6 +149,58 @@ void main() {
     expect(find.text('Workout Detail'), findsOneWidget);
   });
 
+  testWidgets('the action is labelled, and says so exactly once', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    final button = find.byType(WorkoutActionButton);
+    expect(button, findsOneWidget);
+
+    // The label belongs to the control, not to the bar's destination row, so it
+    // renders inside the button rather than as a sixth navigation entry.
+    expect(
+      find.descendant(of: button, matching: find.text('WORKOUT')),
+      findsOneWidget,
+    );
+
+    // excludeSemantics on the button is what stops a screen reader announcing
+    // the label twice; the visible text is still announced through the button's
+    // own label, so the two must not also appear as separate semantics nodes.
+    final node = tester.getSemantics(find.byType(WorkoutActionButton));
+    expect(
+      node.label,
+      contains('Workout'),
+      reason: 'the circle needs an accessible name without its own',
+    );
+  });
+
+  testWidgets('the action and its label fit inside the bar', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    final bar = find.byType(AppBottomNav);
+    final barBottom = tester.getBottomLeft(bar).dy;
+    final screenBottom =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+    // The label sits below the circle, so a fixed top padding alone would push
+    // the text past the bottom of the bar and off the screen.
+    final labelCentre = tester
+        .getCenter(
+          find.descendant(
+            of: find.byType(WorkoutActionButton),
+            matching: find.text('WORKOUT'),
+          ),
+        )
+        .dy;
+    expect(labelCentre, lessThanOrEqualTo(barBottom));
+    expect(labelCentre, lessThan(screenBottom));
+  });
+
   testWidgets('the action is not a fifth destination', (
     WidgetTester tester,
   ) async {
