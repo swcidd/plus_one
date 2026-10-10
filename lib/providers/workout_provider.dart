@@ -33,6 +33,7 @@ class WorkoutProvider extends ChangeNotifier {
   final List<Metric> _metrics;
   ProfileStats _profile;
   int _nextId = 0;
+  int _weeklyGoal = 4;
 
   static DateTime _dayOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
@@ -109,6 +110,37 @@ class WorkoutProvider extends ChangeNotifier {
             w.status == WorkoutStatus.completed,
       )
       .length;
+
+  /// Monday of the week containing today.
+  ///
+  /// Anchoring the week to Monday keeps "4 of 8 sessions" showing the same
+  /// seven days whether the app is opened on a Sunday or a Tuesday. Using the
+  /// rolling last-seven-days window instead would slide the goal boundary
+  /// every time the user opened the app.
+  DateTime get weekStart {
+    final monday = _today.subtract(Duration(days: _today.weekday - 1));
+    return _dayOnly(monday);
+  }
+
+  /// Sessions dated inside the current week, planned and completed alike, so a
+  /// scheduled session already counts toward the weekly target.
+  int get workoutsThisWeek =>
+      _workouts.where((w) => !_dayOnly(w.date).isBefore(weekStart)).length;
+
+  /// Sessions the user is aiming for each week.
+  ///
+  /// Lives beside the counter it is measured against so the dashboard tile and
+  /// the profile setting cannot show different targets. Four is the default a
+  /// lifter training four days a week would want, and it is a starting point
+  /// rather than advice — the value is editable from the profile screen.
+  int get weeklyGoal => _weeklyGoal;
+
+  bool setWeeklyGoal(int value) {
+    if (value < 1 || value > 14 || value == _weeklyGoal) return false;
+    _weeklyGoal = value;
+    notifyListeners();
+    return true;
+  }
 
   /// Share of this month's sessions actually finished, 0.0-1.0. Splits out
   /// as its own getter because the calendar and the profile both show it and
