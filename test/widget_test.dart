@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:plus_one/models/workout.dart';
+import 'package:plus_one/providers/workout_provider.dart';
 import 'package:plus_one/theme/app_colors.dart';
 import 'package:plus_one/theme/app_theme.dart';
 import 'package:plus_one/widgets/bottom_nav_bar.dart';
+import 'package:plus_one/widgets/new_workout_dialog.dart';
 import 'package:plus_one/widgets/workout_action_button.dart';
 import 'package:plus_one/widgets/workout_card.dart';
 
@@ -123,14 +126,11 @@ void main() {
       await tester.tap(find.byType(WorkoutActionButton));
       await tester.pumpAndSettle();
 
-      // There is nothing to open, so the button must not push a detail screen
-      // for a workout that does not exist. It says why instead of going
-      // nowhere, which is the difference between a control and a dead end.
+      // With nothing logged the action cannot open a session, so it opens the
+      // create form instead. That is the only sensible next step for an
+      // account with no sessions, and the one the user is reaching for.
       expect(find.text('Workout Detail'), findsNothing);
-      expect(
-        find.text('Log your first workout to get started.'),
-        findsOneWidget,
-      );
+      expect(find.text('New workout'), findsOneWidget);
     });
 
     testWidgets('the dashboard leads with no general health metrics', (
@@ -259,6 +259,91 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Library is next'), findsOneWidget);
+    });
+  });
+
+  group('new workout dialog', () {
+    testWidgets('the action opens it when the account is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(emptyApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NewWorkoutDialog), findsOneWidget);
+      expect(find.text('New workout'), findsOneWidget);
+      expect(find.text('NAME THIS SESSION'), findsOneWidget);
+      expect(find.text('DATE'), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
+    });
+
+    testWidgets('the action opens a session instead when one is planned', (
+      tester,
+    ) async {
+      await tester.pumpWidget(seededApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+
+      // A planned session is a better answer than a form: opening the form
+      // would offer to create a second session for a day that already has one.
+      expect(find.byType(NewWorkoutDialog), findsNothing);
+      expect(find.text('Workout Detail'), findsOneWidget);
+    });
+
+    testWidgets('starting creates the workout and opens it', (tester) async {
+      final provider = WorkoutProvider();
+      await tester.pumpWidget(emptyAppWith(provider));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'Leg Day');
+      await tester.tap(find.text('Start'));
+      await tester.pumpAndSettle();
+
+      // The session has to be in the store before the detail screen can find
+      // it, or the push lands on "Session not found".
+      expect(provider.workouts, hasLength(1));
+      expect(provider.workouts.single.title, 'Leg Day');
+      expect(provider.workouts.single.status, WorkoutStatus.planned);
+      expect(find.text('Workout Detail'), findsOneWidget);
+    });
+
+    testWidgets('an empty name falls back to the date', (tester) async {
+      final provider = WorkoutProvider();
+      await tester.pumpWidget(emptyAppWith(provider));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start'));
+      await tester.pumpAndSettle();
+
+      // Naming a session is not the point of opening the app, so an untitled
+      // one is created rather than rejected.
+      expect(provider.workouts, hasLength(1));
+      expect(provider.workouts.single.title, isNotEmpty);
+      expect(provider.workouts.single.title, contains('Training'));
+    });
+
+    testWidgets('cancelling creates nothing', (tester) async {
+      final provider = WorkoutProvider();
+      await tester.pumpWidget(emptyAppWith(provider));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(WorkoutActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(provider.workouts, isEmpty);
+      expect(find.byType(NewWorkoutDialog), findsNothing);
+      expect(find.text('Workout Detail'), findsNothing);
     });
   });
 
