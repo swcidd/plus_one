@@ -6,6 +6,7 @@ import 'package:plus_one/main.dart';
 import 'package:plus_one/theme/app_colors.dart';
 import 'package:plus_one/theme/app_theme.dart';
 import 'package:plus_one/widgets/bottom_nav_bar.dart';
+import 'package:plus_one/widgets/workout_action_button.dart';
 import 'package:plus_one/widgets/workout_card.dart';
 
 void main() {
@@ -111,6 +112,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Profile is next'), findsOneWidget);
+  });
+
+  testWidgets('the action sits in the middle, between calendar and library', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    final bar = find.byType(AppBottomNav);
+    double xOf(String label) => tester
+        .getCenter(find.descendant(of: bar, matching: find.text(label)))
+        .dx;
+
+    // The action has to land between the two tabs it separates, not on top of
+    // either. An off-centre button reads as a layout mistake even when
+    // everything is tappable.
+    final action = tester.getCenter(find.byType(WorkoutActionButton)).dx;
+    expect(action, greaterThan(xOf('Calendar')));
+    expect(action, lessThan(xOf('Library')));
+
+    // And it has to be centred on the bar, not merely between the two.
+    final barCentre = tester.getCenter(bar).dx;
+    expect(action, closeTo(barCentre, 1));
+  });
+
+  testWidgets('the action opens the session to train next', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(WorkoutActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Workout Detail'), findsOneWidget);
+  });
+
+  testWidgets('the action is not a fifth destination', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const PlusOneApp());
+    await tester.pumpAndSettle();
+
+    // The bar has five slots but four destinations; if the action were routed
+    // as a destination it would need its own URL, which it has no screen for.
+    final bar = find.byType(AppBottomNav);
+    final dest = tester.widget<NavigationBar>(
+      find.descendant(of: bar, matching: find.byType(NavigationBar)),
+    );
+    expect(dest.destinations, hasLength(5));
+
+    // NavigationDestination stores its labels as widgets, so the names are
+    // asserted from the rendered bar rather than from the destination objects.
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.byType(WorkoutActionButton), findsOneWidget);
   });
 
   testWidgets('a tab route opens its own tab, not the home one', (
