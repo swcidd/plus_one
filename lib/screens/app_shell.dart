@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../navigation/app_tab.dart';
+import '../providers/workout_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/brand_app_bar.dart';
 import '../widgets/empty_state.dart';
 import 'home_screen.dart';
+import 'workout_details_screen.dart';
 
 /// Hosts the four tabs and owns which one is visible.
 ///
@@ -33,6 +36,20 @@ class _AppShellState extends State<AppShell> {
     setState(() => _active = tab);
   }
 
+  /// The bar's action: go to whatever the lifter would train next.
+  ///
+  /// Opens today's plan when there is one, and falls back to the most recent
+  /// session rather than doing nothing, so the button is never a dead control.
+  /// Building a session from scratch needs a form, which is the next screen -
+  /// until then the button takes the user somewhere real.
+  void _startWorkout() {
+    final provider = context.read<WorkoutProvider>();
+    final target = provider.focusWorkout ?? provider.workouts.lastOrNull;
+    if (target == null) return;
+
+    Navigator.of(context).pushNamed(WorkoutDetailsScreen.routeFor(target.id));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,7 +60,11 @@ class _AppShellState extends State<AppShell> {
             _LazyTab(tab: tab, active: _active, select: _select),
         ],
       ),
-      bottomNavigationBar: AppBottomNav(selected: _active, onSelected: _select),
+      bottomNavigationBar: AppBottomNav(
+        selected: _active,
+        onSelected: _select,
+        onWorkoutPressed: _startWorkout,
+      ),
     );
   }
 }
